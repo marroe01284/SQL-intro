@@ -1,14 +1,16 @@
-import express from 'express';
+import express, { text } from 'express';
 import cors from 'cors';
 import mysql from 'mysql2/promise';
-
+import 'dotenv/config';
 const connection = await  mysql.createConnection({
-    host: 'sql7.freesqldatabase.com',
-    database: 'sql7757078',
-    user: 'sql7757078',
-    password: 'TUHblDz1zP',
-    port: '3306'
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT
 });
+
+const port = process.env.PORT || 3002;
 
 const app = express();
 
@@ -44,6 +46,30 @@ app.get('/user/:id', async (req, res) => {
     }
 });
 
+// create sort query // http://localhost:3002/test?sort=id&sortOrder=DESC 
+app.get('/test', async (req, res) => {
+    const sort = req.query.sort || 'id';
+    const sortOrder = req.query.sortOrder || 'DESC';
+    const query = `SELECT * FROM test ORDER BY ${sort} ${sortOrder}`;
+    const [result] = await connection.query(query);
+    res.json(result);
+});
+
+app.get('/test/:id', async (req, res) => {
+    const { id } = req.params;
+    const [result] = await connection.query('SELECT * FROM test WHERE id = ' + id);
+    res.json(result);
+});
+app.post('/test', async (req, res) => {
+    const { content } = req.body;
+
+    const [result] = await connection.query(`
+    INSERT INTO test (content)
+    VALUES ('${content}')
+    `);
+    res.json(result);
+})
+// http://localhost:3002/test?sort=id&sortOrder=DESC
 app.post('/post', async (req, res) => {
     const { id, title, content } = req.body;
 
@@ -62,7 +88,7 @@ app.get('/post', async (req, res) => {
     res.send(req.query);
 })
 
-app.listen(3000, () => {
+app.listen(port, () => {
     console.log('Server started on port 3000');
 })
 
